@@ -40,6 +40,8 @@ canvas { display:block; }
     color:#e0ff55; 
     margin-top:5px; 
 }
+
+/* Game Over Screens */
 #game-over-screen {
     position:absolute; 
     top:0; 
@@ -56,6 +58,18 @@ canvas { display:block; }
     text-align:center;
     font-family:'Jost', sans-serif;
 }
+
+/* Slide 1: Mission Accomplished */
+#slide1 {
+    display: none; /* Changed from flex to none */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+
 #end-title { 
     font-size:2.5rem; 
     margin-bottom:20px; 
@@ -63,7 +77,6 @@ canvas { display:block; }
     text-transform:uppercase; 
     color:#883af1; 
     font-weight:800; 
-    margin-top: -50px; /* رفع العنوان لأعلى */
 }
 #end-subtitle { 
     font-size:2rem; 
@@ -79,6 +92,17 @@ canvas { display:block; }
     margin-bottom:30px; 
     font-weight:600; 
 }
+
+/* Slide 2: Statistics */
+#slide2 {
+    display: flex; /* Changed from none to flex */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
 .stats-container {
     display: flex;
     width: 80%;
@@ -117,6 +141,8 @@ canvas { display:block; }
     border-top: 1px dashed #e0ff55;
     color: #e0ff55;
 }
+
+/* Buttons */
 button { 
     padding:15px 40px; 
     font-size:1.5rem; 
@@ -134,6 +160,8 @@ button:hover {
     transform: scale(1.05); 
     background:#f4ffb8; 
 }
+
+/* Mobile Controls */
 #mobile-controls { 
     display:none; 
     position:absolute; 
@@ -211,29 +239,36 @@ button:hover {
 </div>
 
 <div id="game-over-screen">
-    <h1 id="end-title">MISSION ACCOMPLISHED</h1>
-    
-    <div class="stats-container">
-        
-        <div class="stats-column">
-            <div class="stats-header">Competitor Score</div>
-            <div class="stats-row">VEGF-A Receptors Blocked: <span id="competitor-vegfa">0</span></div>
-            <div class="stats-total">Total: <span id="competitor-vegfa-total">0</span></div>
-        </div>
-
-        <div class="stats-divider"></div>
-        
-        <div class="stats-column">
-            <div class="stats-header">Your Score</div>
-            <div class="stats-row">VEGF-A Receptors Blocked: <span id="player-vegfa">0</span></div>
-            <div class="stats-row">Ang-2 Receptors Blocked: <span id="player-ang2">0</span></div>
-            <div class="stats-total">Total: <span id="player-total">0</span></div>
-        </div>
-        
+    <!-- Slide 1: Mission Accomplished -->
+    <div id="slide1">
+        <h1 id="end-title">MISSION ACCOMPLISHED</h1>
+        <p id="end-subtitle"><strong>75%</strong> of patients achieved absence of DME at Year 2 <br>(<strong>95%</strong> by Year 4)<br><br> eyes... Steady lives.</p>
+        <button id="play-again-btn1" onclick="resetGame()">PLAY AGAIN</button>
     </div>
-    <p id="end-subtitle"><strong>75%</strong> of patients achieved absence of DME at Year 2 <br>(<strong>95%</strong> by Year 4)<br>Dry eyes... Steady lives.</p>
     
-    <button onclick="resetGame()">PLAY AGAIN</button>
+    <!-- Slide 2: Statistics -->
+    <div id="slide2">
+        <h1 id="stats-title">MISSION RESULTS</h1>
+        
+        <div class="stats-container">
+            <div class="stats-column">
+                <div class="stats-header">Competitor Score</div>
+                <div class="stats-row">VEGF-A Receptors Blocked: <span id="competitor-vegfa">0</span></div>
+                <div class="stats-total">Total: <span id="competitor-vegfa-total">0</span></div>
+            </div>
+
+            <div class="stats-divider"></div>
+            
+            <div class="stats-column">
+                <div class="stats-header">Your Score</div>
+                <div class="stats-row">VEGF-A Receptors Blocked: <span id="player-vegfa">0</span></div>
+                <div class="stats-row">Ang-2 Receptors Blocked: <span id="player-ang2">0</span></div>
+                <div class="stats-total">Total: <span id="player-total">0</span></div>
+            </div>
+        </div>
+        
+        <button id="play-again-btn2" onclick="resetGame()">PLAY AGAIN</button>
+    </div>
 </div>
 
 <div id="mobile-controls">
@@ -250,6 +285,8 @@ const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const timeEl = document.getElementById('time');
 const endScreen = document.getElementById('game-over-screen');
+const slide1 = document.getElementById('slide1');
+const slide2 = document.getElementById('slide2');
 const endTitle = document.getElementById('end-title');
 const endSubtitle = document.getElementById('end-subtitle');
 
@@ -583,28 +620,82 @@ function createExplosion(x, y, color, count = 5){
     } 
 }
 
-// تحديث عرض الإحصائيات
-function updateStatsDisplay() {
-    playerVegfaEl.textContent = playerStats.vegfa;
-    playerAng2El.textContent = playerStats.ang2;
-    playerTotalEl.textContent = playerStats.vegfa + playerStats.ang2;
+// Animation variables
+let currentPlayerVegfa = 0;
+let currentPlayerAng2 = 0;
+let currentCompetitorVegfa = 0;
+let animationDuration = 2000; // 2 seconds for faster animation
+let animationStartTime;
+let slideTransitionTimer = null;
+
+// Function to animate the score count-up
+function animateScoreCount() {
+    const finalPlayerVegfa = playerStats.vegfa;
+    const finalPlayerAng2 = playerStats.ang2;
+    const finalCompetitorVegfa = competitorStats.vegfa;
     
-    competitorVegfaEl.textContent = competitorStats.vegfa;
-    competitorVegfaTotalEl.textContent = competitorStats.vegfa;
+    currentPlayerVegfa = 0;
+    currentPlayerAng2 = 0;
+    currentCompetitorVegfa = 0;
+    animationStartTime = Date.now();
+    
+    function update() {
+        const elapsed = Date.now() - animationStartTime;
+        const progress = Math.min(elapsed / animationDuration, 1);
+        
+        // Easing function for smooth animation
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        currentPlayerVegfa = Math.floor(easeOut * finalPlayerVegfa);
+        currentPlayerAng2 = Math.floor(easeOut * finalPlayerAng2);
+        currentCompetitorVegfa = Math.floor(easeOut * finalCompetitorVegfa);
+        
+        // Update display
+        playerVegfaEl.textContent = currentPlayerVegfa;
+        playerAng2El.textContent = currentPlayerAng2;
+        playerTotalEl.textContent = currentPlayerVegfa + currentPlayerAng2;
+        
+        competitorVegfaEl.textContent = currentCompetitorVegfa;
+        competitorVegfaTotalEl.textContent = currentCompetitorVegfa;
+        
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+    
+    requestAnimationFrame(update);
+}
+
+// Function to transition to the mission accomplished slide
+function showMissionAccomplishedSlide() {
+    slide2.style.display = 'none';
+    slide1.style.display = 'flex';
 }
 
 // End Game
 function endGame(){
     gameRunning = false;
     
-    // تحديث عرض الإحصائيات
-    updateStatsDisplay();
-    
+    // Show the statistics screen immediately
     endScreen.style.display = 'flex';
+    slide1.style.display = 'none';
+    slide2.style.display = 'flex';
+    
+    // Start the score animation
+    animateScoreCount();
+    
+    // After 5 seconds, transition to the mission accomplished screen
+    slideTransitionTimer = setTimeout(showMissionAccomplishedSlide, 5000);
 }
 
 // Reset
 function resetGame(){ 
+    // Clear any existing timers
+    if (slideTransitionTimer) {
+        clearTimeout(slideTransitionTimer);
+        slideTransitionTimer = null;
+    }
+    
     score = 0; 
     timeLeft = 30; 
     scoreEl.innerText = "0"; 
