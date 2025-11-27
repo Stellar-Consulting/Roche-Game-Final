@@ -214,22 +214,24 @@ button:hover {
     <h1 id="end-title">MISSION ACCOMPLISHED</h1>
     
     <div class="stats-container">
-        <div class="stats-column">
-            <div class="stats-header">Your Score</div>
-            <div class="stats-row">VEGF-A Receptors Blocked: <span id="player-vegfa">0</span></div>
-            <div class="stats-row">Ang-2 Receptors Blocked: <span id="player-ang2">0</span></div>
-            <div class="stats-total">Total: <span id="player-vegfa-total">0</span> + <span id="player-ang2-total">0</span> = <span id="player-total">0</span></div>
-        </div>
-        
-        <div class="stats-divider"></div>
         
         <div class="stats-column">
             <div class="stats-header">Competitor Score</div>
             <div class="stats-row">VEGF-A Receptors Blocked: <span id="competitor-vegfa">0</span></div>
             <div class="stats-total">Total: <span id="competitor-vegfa-total">0</span></div>
         </div>
+
+        <div class="stats-divider"></div>
+        
+        <div class="stats-column">
+            <div class="stats-header">Your Score</div>
+            <div class="stats-row">VEGF-A Receptors Blocked: <span id="player-vegfa">0</span></div>
+            <div class="stats-row">Ang-2 Receptors Blocked: <span id="player-ang2">0</span></div>
+            <div class="stats-total">Total: <span id="player-total">0</span></div>
+        </div>
+        
     </div>
-    <p id="end-subtitle">75% of patients achieved absence of DME at Year 2 <br>(95% by Year 4)<br>Dry eyes... Steady lives.</p>
+    <p id="end-subtitle"><strong>75%</strong> of patients achieved absence of DME at Year 2 <br>(<strong>95%</strong> by Year 4)<br>Dry eyes... Steady lives.</p>
     
     <button onclick="resetGame()">PLAY AGAIN</button>
 </div>
@@ -254,8 +256,6 @@ const endSubtitle = document.getElementById('end-subtitle');
 // عناصر الإحصائيات الجديدة
 const playerVegfaEl = document.getElementById('player-vegfa');
 const playerAng2El = document.getElementById('player-ang2');
-const playerVegfaTotalEl = document.getElementById('player-vegfa-total');
-const playerAng2TotalEl = document.getElementById('player-ang2-total');
 const playerTotalEl = document.getElementById('player-total');
 const competitorVegfaEl = document.getElementById('competitor-vegfa');
 const competitorVegfaTotalEl = document.getElementById('competitor-vegfa-total');
@@ -587,8 +587,6 @@ function createExplosion(x, y, color, count = 5){
 function updateStatsDisplay() {
     playerVegfaEl.textContent = playerStats.vegfa;
     playerAng2El.textContent = playerStats.ang2;
-    playerVegfaTotalEl.textContent = playerStats.vegfa;
-    playerAng2TotalEl.textContent = playerStats.ang2;
     playerTotalEl.textContent = playerStats.vegfa + playerStats.ang2;
     
     competitorVegfaEl.textContent = competitorStats.vegfa;
