@@ -41,6 +41,55 @@ canvas { display:block; }
     margin-top:5px; 
 }
 
+/* Start Screen */
+#start-screen {
+    position:absolute; 
+    top:0; 
+    left:0; 
+    width:100%; 
+    height:100%;
+    background: url('bg-first.png') no-repeat center center;
+    background-size: cover;
+    display:flex; 
+    flex-direction:column; 
+    justify-content:center; 
+    align-items:center;
+    color:white; 
+    z-index:25; 
+    text-align:center;
+    font-family:'Jost', sans-serif;
+}
+
+#high-score-display {
+    font-size: 1.8rem;
+    color: #e0ff55;
+    margin-bottom: 20px;
+    text-shadow: 0 0 10px rgba(224, 255, 85, 0.7);
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+#start-button { 
+    padding:20px 50px; 
+    font-size:2rem; 
+    background:#e0ff55; 
+    color:#211b47; 
+    border:none; 
+    cursor:pointer; 
+    border-radius:15px; 
+    font-weight:bold; 
+    transition: transform 0.3s, background 0.3s; 
+    font-family:'Jost', sans-serif; 
+    margin-top: 20px;
+    box-shadow: 0 0 20px rgba(224, 255, 85, 0.7);
+    letter-spacing: 2px;
+}
+#start-button:hover { 
+    transform: scale(1.1); 
+    background:#f4ffb8; 
+    box-shadow: 0 0 30px rgba(224, 255, 85, 0.9);
+}
+
 /* Game Over Screens */
 #game-over-screen {
     position:absolute; 
@@ -49,7 +98,7 @@ canvas { display:block; }
     width:100%; 
     height:100%;
     background: rgba(33, 27, 71, 0.95);
-    display:flex; 
+    display:none; 
     flex-direction:column; 
     justify-content:center; 
     align-items:center;
@@ -226,10 +275,30 @@ button:hover {
         height: 2px;
         margin: 10px 0;
     }
+    #high-score-display {
+        font-size: 1.5rem;
+    }
+}
+
+/* Countdown Timer */
+#countdown-timer {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    font-size: 1.2rem;
+    color: #e0ff55;
+    font-weight: 600;
+    text-shadow: 0 0 5px rgba(224, 255, 85, 0.7);
 }
 </style>
 </head>
 <body>
+
+<!-- Start Screen -->
+<div id="start-screen">
+    <div id="high-score-display">HIGH SCORE: <span id="high-score-value">0</span></div>
+    <button id="start-button">Press ▷ to play</button>
+</div>
 
 <div id="ui-layer">
     <div class="score-box">
@@ -243,7 +312,8 @@ button:hover {
     <div id="slide1">
         <h1 id="end-title">MISSION ACCOMPLISHED</h1>
         <p id="end-subtitle"><strong>75%</strong> OF PATIENTS ACHIEVED ABSENCE OF DME AT YEAR 2 <br>(<strong>95%</strong> BY YEAR 4)<br><br>DRY EYES... STEADY LIVES.</p>
-        <button id="play-again-btn1" onclick="resetGame()">PLAY AGAIN</button>
+        <button id="play-again-btn1" onclick="resetGame()">PRESS ▷ TO PLAY AGAIN</button>
+        <div id="countdown-timer">Returning in: <span id="countdown">30</span>s</div>
     </div>
     
     <!-- Slide 2: Statistics -->
@@ -266,8 +336,7 @@ button:hover {
                 <div class="stats-total">Total: <span id="player-total">0</span></div>
             </div>
         </div>
-        
-        <button id="play-again-btn2" onclick="resetGame()">PLAY AGAIN</button>
+       
     </div>
 </div>
 
@@ -284,11 +353,19 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreEl = document.getElementById('score');
 const timeEl = document.getElementById('time');
+const startScreen = document.getElementById('start-screen');
 const endScreen = document.getElementById('game-over-screen');
 const slide1 = document.getElementById('slide1');
 const slide2 = document.getElementById('slide2');
 const endTitle = document.getElementById('end-title');
 const endSubtitle = document.getElementById('end-subtitle');
+const startButton = document.getElementById('start-button');
+const highScoreDisplay = document.getElementById('high-score-value');
+const countdownEl = document.getElementById('countdown');
+
+// High score management
+let highScore = localStorage.getItem('spaceInvadersHighScore') || 0;
+highScoreDisplay.textContent = highScore;
 
 // عناصر الإحصائيات الجديدة
 const playerVegfaEl = document.getElementById('player-vegfa');
@@ -297,7 +374,7 @@ const playerTotalEl = document.getElementById('player-total');
 const competitorVegfaEl = document.getElementById('competitor-vegfa');
 const competitorVegfaTotalEl = document.getElementById('competitor-vegfa-total');
 
-let width, height, gameRunning = true, score = 0, timeLeft = 30, lastTime = Date.now();
+let width, height, gameRunning = false, score = 0, timeLeft = 30, lastTime = Date.now();
 const keys = {w:false, a:false, s:false, d:false, space:false};
 const joystick = {active:false, dx:0, dy:0, originX:0, originY:0};
 
@@ -310,6 +387,10 @@ let playerStats = {
 let competitorStats = {
     vegfa: 0
 };
+
+// Variables for auto-redirect
+let countdownTimer;
+let remainingTime = 30;
 
 // Images - using your original image files
 const imgPlayer = new Image(); 
@@ -327,6 +408,10 @@ imgVEGFA.src = 'VEGF-A.png';
 // إضافة صورة الخلفية الجديدة
 const imgBackground = new Image();
 imgBackground.src = 'bg.png';
+
+// Logo image
+const imgLogo = new Image();
+imgLogo.src = 'logo.png';
 
 // Resize
 function resize(){ 
@@ -419,8 +504,7 @@ class Logo {
         this.speed = 2; 
         this.active = true; 
         this.rotation = 0;
-        this.image = new Image();
-        this.image.src = 'logo.png';
+        this.image = imgLogo;
     } 
     update(){ 
         this.y += this.speed; 
@@ -472,6 +556,7 @@ class Player {
         this.speed = 3; 
         this.cooldown = 0; 
         this.weaponLevel = 1; 
+        this.image = imgPlayer;
     } 
     update(){ 
         let dx = 0, dy = 0; 
@@ -507,7 +592,7 @@ class Player {
         this.cooldown = 15; 
     } 
     draw(){ 
-        ctx.drawImage(imgPlayer, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height); 
+        ctx.drawImage(this.image, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height); 
     } 
 }
 
@@ -527,6 +612,7 @@ class IdiotAI {
         this.shootTimer = 0; 
         // تقليل سرعة الطائرة Competitor من 0.005 إلى 0.003
         this.moveSpeed = 0.003; 
+        this.image = imgAI;
     } 
     update(){ 
         if(!this.alive) return; 
@@ -556,7 +642,7 @@ class IdiotAI {
     } 
     draw(){ 
         if(!this.alive) return; 
-        ctx.drawImage(imgAI, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height); 
+        ctx.drawImage(this.image, this.x - this.width / 2, this.y - this.height / 2, this.width, this.height); 
     } 
 }
 
@@ -670,11 +756,69 @@ function animateScoreCount() {
 function showMissionAccomplishedSlide() {
     slide2.style.display = 'none';
     slide1.style.display = 'flex';
+    
+    // Start the countdown timer for auto-redirect
+    startCountdown();
+}
+
+// Function to start the countdown timer
+function startCountdown() {
+    remainingTime = 30;
+    countdownEl.textContent = remainingTime;
+    
+    // Clear any existing timer
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
+    }
+    
+    // Start the countdown
+    countdownTimer = setInterval(function() {
+        remainingTime--;
+        countdownEl.textContent = remainingTime;
+        
+        if (remainingTime <= 0) {
+            clearInterval(countdownTimer);
+            returnToStartScreen();
+        }
+    }, 1000);
+}
+
+// Function to return to the start screen
+function returnToStartScreen() {
+    // Clear any existing timers
+    if (slideTransitionTimer) {
+        clearTimeout(slideTransitionTimer);
+        slideTransitionTimer = null;
+    }
+    
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+    }
+    
+    // Hide game over screen and show start screen
+    endScreen.style.display = 'none';
+    startScreen.style.display = 'flex';
+    
+    // Update high score display
+    highScoreDisplay.textContent = highScore;
+}
+
+// Update high score
+function updateHighScore() {
+    if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('spaceInvadersHighScore', highScore);
+        highScoreDisplay.textContent = highScore;
+    }
 }
 
 // End Game
 function endGame(){
     gameRunning = false;
+    
+    // Update high score
+    updateHighScore();
     
     // Show the statistics screen immediately
     endScreen.style.display = 'flex';
@@ -688,12 +832,25 @@ function endGame(){
     slideTransitionTimer = setTimeout(showMissionAccomplishedSlide, 5000);
 }
 
+// Start Game
+function startGame() {
+    startScreen.style.display = 'none';
+    gameRunning = true;
+    lastTime = Date.now();
+    requestAnimationFrame(loop);
+}
+
 // Reset
 function resetGame(){ 
     // Clear any existing timers
     if (slideTransitionTimer) {
         clearTimeout(slideTransitionTimer);
         slideTransitionTimer = null;
+    }
+    
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
     }
     
     score = 0; 
@@ -717,6 +874,7 @@ function resetGame(){
     competitorStats = { vegfa: 0 };
     
     endScreen.style.display = 'none'; 
+    startScreen.style.display = 'none';
     requestAnimationFrame(loop); 
 }
 
@@ -783,6 +941,9 @@ function loop(){
     checkCollisions();
     requestAnimationFrame(loop);
 }
+
+// Start button event listener
+startButton.addEventListener('click', startGame);
 
 // Rami movement
 window.addEventListener('keydown', e => { 
@@ -863,7 +1024,9 @@ function updateJoystick(x, y){
     joyKnob.style.transform = `translate(${dx}px, ${dy}px)`; 
 }
 
-requestAnimationFrame(loop);
+// Initialize the game with the start screen visible
+resize();
+startScreen.style.display = 'flex';
 </script>
 
 </body>
